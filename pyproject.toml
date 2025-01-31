@@ -82,3 +82,6 @@ default-tag = "1.0.0"
 
 [tool.versioningit.write]
 file = "useful_cli/_version.py"
+
+[project.scripts]
+visualize_and_align = "useful_cli.cli.visualize_and_align:main"
