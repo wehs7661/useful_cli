@@ -84,4 +84,5 @@ default-tag = "1.0.0"
 file = "useful_cli/_version.py"
 
 [project.scripts]
-visualize_and_align = "useful_cli.cli.visualize_and_align:main"
+visualize_pdb = "useful_cli.cli.visualize_pdb:main"
+plot_2d = "useful_cli.cli.plot_2d:main"
