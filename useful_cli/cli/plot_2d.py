@@ -50,10 +50,10 @@ def initialize():
     )
     parser.add_argument(
         "-n",
-        "--pngname",
+        "--figname",
         type=str,
         default="plot.png",
-        help="The name of the PNG file to be saved."
+        help="The path to save the figure."
     )
     parser.add_argument(
         "-cx",
@@ -227,5 +227,4 @@ def main():
         if len(args.xvg) > 1:
             plt.legend(ncol=args.legend_col)
 
-    print(args.pngname)
-    plt.savefig(args.pngname, dpi=600)
+    plt.savefig(args.figname, dpi=600)

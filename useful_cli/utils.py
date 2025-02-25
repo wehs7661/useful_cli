@@ -50,3 +50,34 @@ def apply_conversion(data, conversion=None, temp=None):
         new_data = func(data)
     return new_data, unit_label
 
+
+def get_subplot_layout(n_subplots):
+    """
+    Figures out the number of rows and columns for the subplots given the number of subplots
+    in the figure. The function tries to make the figure as square as possible.
+
+    Parameters
+    ----------
+    n_subplots : int
+        The number of subplots in the figure.
+
+    Returns
+    -------
+    n_rows : int
+        The number of rows in the figure.
+    n_cols : int
+        The number of columns in the figure.
+    """
+    if int(np.sqrt(n_subplots) + 0.5) ** 2 == n_subplots:
+        # perfect square number
+        n_cols = int(np.sqrt(n_subplots))
+    else:
+        n_cols = int(np.floor(np.sqrt(n_subplots))) + 1 
+    
+    if n_subplots % n_cols == 0:
+        n_rows = int(n_subplots / n_cols)
+    else:
+        n_rows = int(np.floor(n_subplots / n_cols)) + 1 
+    
+    return n_cols, n_rows
+
