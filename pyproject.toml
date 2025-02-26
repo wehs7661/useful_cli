@@ -24,6 +24,7 @@ dependencies = [
     "natsort",
     "numpy",
     "matplotlib",
+    "opencv-python",
 ]
 
 # Update the urls once the hosting is set up.

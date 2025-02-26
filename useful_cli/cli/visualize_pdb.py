@@ -72,10 +72,29 @@ def initialize(args):
             If the reference structure is not provided in this case, the first model will be used as the reference. \
             Default is False."
     )
+    parser.add_argument(
+        "-n",
+        "--n_models",
+        type=int,
+        help="The number of models/frames to visualize in cases where the input PDB file is split into multiple \
+            models/frames using the --split flag. If not provided, all models/frames will be aligned visualized."
+    )
+    parser.add_argument(
+        "-sel",
+        "--selection",
+        type=str,
+        help="The selection of atoms to align and visualize. If not provided, all atoms will be used."
+    )
+    parser.add_argument(
+        "-z",
+        "--zoom",
+        type=float,
+        help="The buffer (in Angstroms) around the selected atoms to zoom in on. The default is not to zoom in at all."
+    )
     args = parser.parse_args()
     return args
 
-def load_and_align(obj_name, pdb_file, ref=None, split=False):
+def load_and_align(obj_name, pdb_file, ref=None, split=False, n_models=None, selection=None, zoom=None):
     """
     Load a PDB file into PyMOL and align it to a reference structure (if provided).
 
@@ -91,28 +110,56 @@ def load_and_align(obj_name, pdb_file, ref=None, split=False):
         For a PDB file containing multiple models/frames, whether to split them into separate objects
         and align all of them to the reference structure. If the reference structure is not provided in this case,
         the first model will be used as the reference. The default is False.
+    n_models : int, optional
+        The number of models/frames to visualize in cases where the input PDB file is split into multiple
+        models/frames using the split flag. If not provided, all models/frames will be aligned visualized.
+    selection : str, optional
+        The selection of atoms to align and visualize. If not provided, all atoms will be used.
+    zoom : float, optional
+        The buffer (in Angstroms) around the selected atoms to zoom in on. The default is not to zoom in at all.
     """
+    print(f"Loading {pdb_file}...")
     cmd = pymol.cmd
     cmd.load(pdb_file, obj_name)
+    
+    align_obj = obj_name
+    if selection is not None:
+        obj_name = f"{obj_name}_selected"
+        cmd.select(obj_name, selection)
+        cmd.hide("everything", f"not {obj_name}")
 
     if split:
+        print("Splitting the models...")
         cmd.split_states(obj_name)
+        if n_models is None:
+            n_models = cmd.count_states(obj_name)
+        else:
+            if n_models > cmd.count_states(obj_name):
+                raise ValueError(f"The input PDB file {pdb_file} contains only {cmd.count_states(obj_name)} models \
+                    but n_models is set to {n_models}.")
+
         if ref is not None:
             cmd.load(ref, "reference")
-            for i in range(1, cmd.count_states(obj_name) + 1):
-                cmd.align(f"{obj_name}_{i:04d}", "reference")
+            for i in range(1, n_models + 1):
+                print(f"Aligning {align_obj}_{i:04d} to the reference...")
+                cmd.align(f"{align_obj}_{i:04d}", "reference")
         else:
-            cmd.align(f"{obj_name}_0001", obj_name)
-            for i in range(2, cmd.count_states(obj_name) + 1):
-                cmd.align(f"{obj_name}_{i:04d}", f"{obj_name}_0001")
+            for i in range(2, n_models + 1):
+                print(f"Aligning {align_obj}_{i:04d} to {align_obj}_0001...")
+                cmd.align(f"{align_obj}_{i:04d}", f"{align_obj}_0001")
 
         # Color the models
+        print("Coloring the models...")
         cmd.spectrum("count", "green_white_yellow", f"{obj_name}_*")
         
     else:
         if ref is not None:
             cmd.load(ref, "reference")
             cmd.align(obj_name, "reference")
+
+    cmd.orient()
+    if zoom is not None:
+        cmd.zoom(obj_name, buffer=zoom)
 
 
 def render_image(output, width, height, dpi):
@@ -132,7 +179,6 @@ def render_image(output, width, height, dpi):
     """
     cmd = pymol.cmd
     cmd.bg_color("white")
-    cmd.orient()
     cmd.set("ray_opaque_background", "off")
     cmd.ray()
     cmd.png(output, width=width, height=height, dpi=dpi)
@@ -170,10 +216,30 @@ def main():
         if args.ref:
             cmd.load(args.ref, "reference")
         for i, pdb_file in enumerate(args.pdb_files):
-            load_and_align(f"structure_{i}", pdb_file, "reference" if args.ref else None, args.split)
+            load_and_align(
+                f"structure_{i}",
+                pdb_file,
+                "reference" if args.ref else None,
+                args.split,
+                args.n_models,
+                args.selection,
+                args.zoom
+            )
+
+        print("Rendering the image...")
         render_image(args.outputs[0], args.width, args.height, args.dpi)
     else:
         for pdb_file, output in zip(args.pdb_files, args.outputs):
-            load_and_align("structure", pdb_file, args.ref, args.split)
+            load_and_align(
+                "structure",
+                pdb_file,
+                args.ref,
+                args.split,
+                args.n_models,
+                args.selection,
+                args.zoom
+            )
             render_image(output, args.width, args.height, args.dpi)
             cmd.delete("all")
+
+    print(f"Elapsed time: {time.time() - t0:.2f} s.")
