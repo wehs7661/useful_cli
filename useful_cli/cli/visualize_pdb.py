@@ -126,6 +126,8 @@ def load_and_align(obj_name, pdb_file, ref=None, split=False, n_models=None, sel
     if selection is not None:
         obj_name = f"{obj_name}_selected"
         cmd.select(obj_name, selection)
+        if cmd.count_atoms(obj_name) == 0:
+            raise ValueError(f"The selection {selection} does not contain any atoms.")
         cmd.hide("everything", f"not {obj_name}")
 
     if split:
@@ -149,8 +151,8 @@ def load_and_align(obj_name, pdb_file, ref=None, split=False, n_models=None, sel
                 cmd.align(f"{align_obj}_{i:04d}", f"{align_obj}_0001")
 
         # Color the models
-        print("Coloring the models...")
-        cmd.spectrum("count", "green_white_yellow", f"{obj_name}_*")
+        # print("Coloring the models...")
+        # cmd.spectrum("count", "green_white_yellow", f"{obj_name}_*")
         
     else:
         if ref is not None:
